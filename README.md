@@ -110,7 +110,11 @@ Heap이라고 해서 데이터 영역이 특별한 것이 아니고, 0,1 flag를
  * Block의 크기는 최소 2word 이상이 되어야 함 (2word 이상의 정렬제한 조건이 되어야 함)
  	- memory alignment의 특성 때문에 기본적으로는 block의 주소는 word의 배수에 맞게 align 되어 있어야 한다.
 	- 할당 상태에 대한 정보를 담는 flag, block의 크기 등 다른 오버헤드를 담아야 하기 때문에 1 word를 1 block으로 한다면 공간이 부족해진다. ==> 최소 2 block
-	- malloc은 2 word를 기준으로 align하낟. 그렇기 때문에 32bit의 경우 8의 배수 주소를 return하고 64bit는 16의 배수를 return한다. (GUN에서)
+		- 우리가 User입장에서 Data를 읽어 들일 때는 Header의 정보는 전혀 필요가 없다. 그렇기 때문에 최소 8byte align이 되어야 실제 데이터가 담긴 부분을 시작으로 Data를 읽어 들일 수가 있다. 아래 빨간색 부터 데이터를 read하는 것
+		![](https://user-images.githubusercontent.com/42313359/145668427-876a7b17-2ab8-407f-b42e-119db819ee40.png)
+
+
+	- malloc은 2 word를 기준으로 align한다. 그렇기 때문에 32bit의 경우 8의 배수 주소를 return하고 64bit는 16의 배수를 return한다. (GUN에서)
 	- 2 word 이상의 정렬 제한을 원한다면 `aligned_alloc` 이나 `posix_memalign`을 사용할 수 있다.(GNU에서)
 
 > **결국, 이 block에 어떤 정보를 담고 block들을 어떻게 관리하는지, 어떤 정책으로 관리하는지가 Heap 메모리 이용도, 할당 속도를 높이는지에 대한 것이 된다.**
@@ -160,3 +164,4 @@ Best fit은 메모리 이용률을 높일 수는 있지만, 검색 시간이 오
 * Heap 영역에서 가장 쉬운 방법론으로 메모리를 어떻게 할당하고 관리할 수 있는지
 * 어떤 정책을 하는지에 따라 각 부분에 trade off가 생긴다는 관점
 * 현대는 메모리가 커진 만큼 block에 추가적인 정보를 더 담으면서 더 좋은 정책을 펼칠 수 있겠다
+
