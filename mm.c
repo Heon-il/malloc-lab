@@ -1,22 +1,13 @@
-/*
- * mm-naive.c - The fastest, least memory-efficient malloc package.
- * 
- * In this naive approach, a block is allocated by simply incrementing
- * the brk pointer.  A block is pure payload. There are no headers or
- * footers.  Blocks are never coalesced or reused. Realloc is
- * implemented directly using mm_malloc and mm_free.
- *
- * NOTE TO STUDENTS: Replace this header comment with your own header
- * comment that gives a high level description of your solution.
- */
+/* 
+* Simple Segregated Free List
+* Find fit : First Fit
+* 17 size classes 
 
-
-// https://github.com/sofiats2021/malloc-lab/blob/master/mm.c
-/* Segregated Free List. First - Fit 
- * 17 size classes 
- * segregated free list의 first fit은 best fit에 속한다.
+We can optimize by 
+ - sorting by block size
+ - use realloc bit : Assume that there is a high possiblity that realloced block would be free block. 
+ - Find the most suitable size that can be allocated with high frequency
 */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,10 +18,6 @@
 #include "mm.h"
 #include "memlib.h"
 
-/*********************************************************
- * NOTE TO STUDENTS: Before you do anything else, please
- * provide your team information in the following struct.
- ********************************************************/
 team_t team = {
     /* Team name */
     "ateam",
@@ -50,11 +37,9 @@ team_t team = {
 /* rounds up to the nearest multiple of ALIGNMENT */
 #define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~0x7)
 
-
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
 #define u_int unsigned int
-
 
 /* Debug Flag */
 #define DEBUG_MALLOC 0
@@ -62,8 +47,6 @@ team_t team = {
 #define DEBUG_PLACE 0
 #define DEBUG_INSERT 0
 #define DEBUG_DELETE 0
-
-
 
 /* Basic constants and macros */
 #define WSIZE 4             /* Word and header/footer size (bytes) */
@@ -106,19 +89,9 @@ team_t team = {
 
 /* End of Macros */
 
-
-
-
-
-
-
 /* private global varialbes */
 static char *heap_listp = 0; 
 static char **freelist_p = 0; // pointer to the start an array of block pointers (free blocks) of diffeerent size classes
-
-
-
-
 
 // hepler function defititions
 static void *extend_heap(size_t words);
@@ -133,9 +106,7 @@ static void print_heap();
 static void check_block(void *bp);
 
 
-
 /* function for debug */
-
 // print info of a block 
 static void print_block(void *bp)
 {
@@ -146,10 +117,10 @@ static void print_block(void *bp)
     printf("pred : %p, succ: %p\n", (void *)GET(PRED(bp)), (void *)GET(SUCC(bp)));
 }
 
+
 /*
  *  check alignment and header/footer consistency of a block
  */
-
 static void check_block(void *bp)
 {
     if (GET_SIZE(HDRP(bp)) % DSIZE)
@@ -198,12 +169,6 @@ static void delete(void *bp)
 {
 
     int pre = !is_list_ptr(PRED_BLKP(bp));
-    // is_list_ptr은 여기서 맨 앞 부분에 가리키는 주소값에 포함되는지 물어보는 거고
-    // 이게 만약 포함되서 지금 가리키는 bp가 첫 block이 되면
-    // pre는 없는게 된다.
-    // 그래서 pre가 있다면 is_list_ptr의 값이 false여야 한다는 것이다.
-    // 그래서 앞에 !를 붙인다
-
 
     int suc = (SUCC_BLKP(bp) != (void *) 0); 
 
@@ -495,7 +460,6 @@ static void place(void *bp, size_t asize)
  */
 int mm_init(void)\
 {
-    // implicit : unused(1) + prologue(2) + epilogeu(1)
     // segregated : NUM_SIZE_CLASS + prologue(2) + epliogue(1)
     if ((heap_listp = mem_sbrk(4*(NUM_SIZE_CLASS + 2 + 1))) == (void*)-1)
         return -1;
@@ -676,17 +640,3 @@ void *mm_realloc(void *bp, size_t size)
         return newbp;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
