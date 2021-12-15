@@ -64,7 +64,7 @@ To get a list of the driver flags:
 
 ## 과제 목적
 **힙 할당 `정책`을 이해**
-(힙 할당 정책을 이해하는 것이기 때문에 Heap영역을 만들 때 init에서 MAX_HEAP으로 Heap의 전체 크기를 받은 후 힙이 기본적으로 어떤 정책으로 관리되고 운영되는지에 대한 기본을 이해(implicit list))
+(힙 할당 정책을 이해하는 것이기 때문에 Heap영역을 만들 때 init에서 MAX_HEAP으로 Heap의 전체 크기를 받은 후 힙이 기본적으로 어떤 정책으로 관리되고 운영되는지에 대한 기본을 이해)
 
 ## Register와 Memory
 레지스터는 `word addressable`한 반면 메모리는 `byte addressable` 하다. 
@@ -165,3 +165,106 @@ Best fit은 메모리 이용률을 높일 수는 있지만, 검색 시간이 오
 * 어떤 정책을 하는지에 따라 각 부분에 trade off가 생긴다는 관점
 * 현대는 메모리가 커진 만큼 block에 추가적인 정보를 더 담으면서 더 좋은 정책을 펼칠 수 있겠다
 
+## explicit
+- explicit은 block에 `predecessor`와 `successor`를 추가하여 Free block들을 list로 관리한다.
+- implicit에서 free block들만 탐색하면 되기 때문에 검색시간이 전체 block의 수에서 free block의 수로 줄어든다.
+- free block list를 관리하는 방법에는 여러가지가 있을 수 있는데 가장 간단한 방법으로는 LIFO를 이용하는 것이고, 주소 순 또는 block의 크기 순으로 정렬하여 list를 관리해줄 수 있다. 
+
+
+## segregated list
+ - size class를 만들어 여러 개의 free block을 관리한다. 쉽게 말해서 explicit을 여러 size class로 구분하여 free block을 관리하는 것이다. 이때, size들은 2의 거듭 제곱의 범위로 나눠주는 것이 일반적인 방법이다.
+
+## 최적화 이슈
+explicit과 segregated list 등의 개념까지 이해하는 것은 간단한 일이다. 하지만, 이를 최적화 하고 메모리 이용도와 속도를 높이는 것은 많은 디자인 스페이스를 고려해야하기 때문에 연구 주제이자 도전적인 과제로 느껴진다. malloc lab 프로젝트에서 98점이라는 높은 점수를 받은 코드를 보았는데 이 코드를 기반으로 내가 이해한 최적화에 대해 적어보고자 한다.([링크](https://github.com/mightydeveloper/Malloc-Lab/blob/master/mm.c), 가장 기본적으로는 segregated list를 이용하였고 최적화 하여 점수를 높임)
+
+
+- free block list를 크기 순으로 정렬 + first fit + segregated list
+	- first fit의 장점은 큰 블록들을 뒤에 남겨두는 경향성이 있다는 것이다.
+	- 이러한 경향성과 block을 크기 순으로 정렬하는 것은 first fit의 장점을 최대한 살릴 수 있고, 분리된 size 때문에 검색 속도를 또한 더 높일 수 있다.(정렬이 되어 있기 때문에 best fit의 특성까지 가지게 된다.)
+- place 함수에서는 test case에 맞는 적절한 size를 100으로 보고 큰 블록들을 뒤에 남겨두기 위한 경향성을 유지하려고 한다.
+- realloc
+	 - heap extension을 최소화
+	 	- next block이 free인지 확인하고 공간이 충분하다면 expanding
+		- 공간이 충분하지 않다면 heap extension을 해서 확장을 하고 옮긴다.(나의 추측 : `한 번 realloc한 block은 다시 realloc할 가능성이 높다고 가정하고 buffer를 주는 듯 하다.` C++의 vector의 capacity가 어떻게 변하는지의 양상을 보면 일정 범위 이상에서 부터 1.5 정도의 배수 형태를 유지하기 때문에 이렇게 추측 할 수 있을 것 같다.)
+	- 큰 block을 뒤로 남겨두는 경향성 때문에 realloc 에서도 그 성질을 이용하면 단편화를 줄일 수 있는 것으로 보인다.
+
+	- realloc bit를 둔다.
+		-	buffer 사이즈를 기준으로 비교해서 next block에 realloc 비트를 준다. realloc된 block을 위한 임시 공간을 확보해 heap extension 과정을 최소화하려고 한다.
+
+
+## Garbage Collector
+### 기초
+- Directed Graph로 메모리를 바라본다.
+- 노드는 루트 노드와 힙 노드로 구분된다.
+- 루트 노드는 힙에 속하지 않고 힙노드로 방향을 가지는 메모리에 대응된다 
+ex) stack의 지역 변수, 매개 변수, 전역 변수 등
+- 루트 노드에서 도달할 수 없는 노드가 존재하면 그 노드는 도달할 수 없다고 이야기 한다. 이렇게 도달 불가능한 노드는 쓰레기(garbage)가 된다.
+![Untitled](https://user-images.githubusercontent.com/42313359/146148864-a404c21b-c3e6-4201-9727-6c13964401da.png)
+- 도달 불가능한 노드들을 free 시켜서 반환 받고 이를 가용 리스트에 추가한다.
+- 자바와 같은 가비지 컬렉터는 포인터를 어떻게 생성하고 사용하는지에 대해 깊게 제어하고 그래프의 정확한 표현을 유지하기 때문에 모든 Garbage를 free시킬 수 있다.
+- C와 C++를 위한 일반적인 Garbage Collector 같은 경우는 그래프의 정확한 표현을 유지할 수 없기 때문에 Garbage Collector의 기능을 완벽하게 제공하기는 힘들고 이와 같은 Collector를 보수적인 가비지 컬렉터(conservative garbage collector)라고 한다.
+- 컬렉터들은 새로운 요청에 의해 자신의 기능을 제공(garbage를 찾아서 회수 하는 등)하거나 별도의 스레드를 생성해 병렬로 그래프를 관리하며 garbage를 회수한다.
+- 만약 C와 같은 프로그램을 위한 보수적인 가비지 컬렉터를 malloc과 연동할 수 있는지 모델링 해본다면 아래와 같은 그림으로 표현될 수 있다.
+![Untitled (1)](https://user-images.githubusercontent.com/42313359/146149066-302727df-eb8c-4faf-83a6-79f16e3687fb.png)
+
+### Mark & Sweep 가비지 컬렉터
+
+- Garbage Collection을 수행하기 위한 하나의 알고리즘
+: Mark 단계와 Sweep 단계로 나누어진다.
+- **Mark** : 도달 가능한 Heap Node들을 찾고 표시(mark)한다.
+- **Sweep** : Mark단계에서 표시되지 않은 Garbage들을 회수 한다.
+
+> C언어로 의사코드를 통해 Mark & Sweep 가비지 컬렉터 알고리즘이 어떻게 동작하는지 이해를 해보도록 하자!
+
+```C
+typedef void* ptr; // void 포인터 타입을 ptr로 정의
+
+/* 함수 설명 */
+ptr isPtr(ptr p); // p가 할당된 블록 내의 어떤 워드를 가리키면, 해당 블록의 시작을 가리키는 포인터를 리턴, 그 외는 NULL을 리턴
+int blockMarked(ptr b); // 블록 b가 이미 mark되어 있다면 true 리턴
+int blockAllocated(ptr b); // 블록 b가 할당되어 있다면 true 리턴
+void markBlock(ptr b); // 블록 b를 mark
+int length(ptr b); // 블록 b의 길이를 워드로 리턴(헤더 제외)
+void unmarkBlock(ptr b); // 블록 b의 상태를 marked에서 unmarked로 변경
+ptr nextBlock(ptr b); // 힙 내 블록 b의 다음 블록을 리턴
+```
+
+#### mark function
+```C
+void mark(ptr p){
+	if ((b== isPtr(p)) == NULL)
+		return;
+	if (blockMarked(b))
+		return;
+	markBlock(b);
+	len = length(b);
+	for (i =0; i<len; i++)
+		mark(b[i]);
+	return;	
+}
+```
+#### sweep function
+``` C
+void sweep(ptr b, ptr end){
+	while(b<end){
+		if(blockMarked(b))
+			unmarkBlock(b);
+		else if(blockAllocated(b))
+			free(b);
+		b = nextBlock(b);
+	}
+	return;
+}
+```
+
+### 추가
+[링크](https://medium.com/@joongwon/jvm-garbage-collection-algorithms-3869b7b0aa6f)에서 Garbage Collection Algorithm을 쉽게 잘 설명해주신다. 아직 개발 언어를 정하지는 못했지만 나중에 내가 java 개발자가 된다면 [이 글](https://d2.naver.com/helloworld/1329)도 읽고 이해할 수 있으면 좋겠다. 
+
+
+
+## 마무리
+- malloc이 공간을 어떻게 할당해줄 수 있는지 낮은 수준에서 이해해볼 수 있어서 좋았다.
+- segregated list까지 이해를 하면서 trade off, 최적화를 통해 메모리 이용률, 속도를 높일 수 있는 방법들을 알아 볼 수 있었다.
+- 할당기를 구현을 할 때에는 캐스팅, 메모리 alignment 등 신경써줘야 할 것이 많기 때문에 c언어와 더 가까워 질 수 있는 시간이었다.(처음부터 스스로 구현을 해야 했더라면 상당히 까다로운 작업이었을 것)
+- Garbage Collector에 대한 기본적인 이해를 해볼 수 있었다.
+- 낮은 수준에서 Garbage Collector를 구현해보고 싶었지만(다른 사람이 만든 코드를 보고 이해해보고 싶었지만,) 실패.. 
