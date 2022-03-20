@@ -1,58 +1,3 @@
-#####################################################################
-CS:APP Malloc Lab
-Handout files for students
-
-Copyright (c) 2002, R. Bryant and D. O'Hallaron, All rights reserved.
-May not be used, modified, or copied without permission.
-
-######################################################################
-
-***********
-Main Files:
-***********
-
-mm.{c,h}	
-	Your solution malloc package. mm.c is the file that you
-	will be handing in, and is the only file you should modify.
-
-mdriver.c	
-	The malloc driver that tests your mm.c file
-
-short{1,2}-bal.rep
-	Two tiny tracefiles to help you get started. 
-
-Makefile	
-	Builds the driver
-
-**********************************
-Other support files for the driver
-**********************************
-
-config.h	Configures the malloc lab driver
-fsecs.{c,h}	Wrapper function for the different timer packages
-clock.{c,h}	Routines for accessing the Pentium and Alpha cycle counters
-fcyc.{c,h}	Timer functions based on cycle counters
-ftimer.{c,h}	Timer functions based on interval timers and gettimeofday()
-memlib.{c,h}	Models the heap and sbrk function
-
-*******************************
-Building and running the driver
-*******************************
-To build the driver, type "make" to the shell.
-
-To run the driver on a tiny test trace:
-
-	unix> mdriver -V -f short1-bal.rep
-
-The -V option prints out helpful tracing and summary information.
-
-To get a list of the driver flags:
-
-	unix> mdriver -h
-
-
---------
-
 # Malloc Lab
 
 ## 사전 필요지식
@@ -268,3 +213,65 @@ void sweep(ptr b, ptr end){
 - 할당기를 구현을 할 때에는 캐스팅, 메모리 alignment 등 신경써줘야 할 것이 많기 때문에 c언어와 더 가까워 질 수 있는 시간이었다.(처음부터 스스로 구현을 해야 했더라면 상당히 까다로운 작업이었을 것)
 - Garbage Collector에 대한 기본적인 이해를 해볼 수 있었다.
 - 낮은 수준에서 Garbage Collector를 구현해보고 싶었지만(다른 사람이 만든 코드를 보고 이해해보고 싶었지만,) 실패.. 
+
+
+
+
+
+
+
+
+#####################################################################
+CS:APP Malloc Lab
+Handout files for students
+
+Copyright (c) 2002, R. Bryant and D. O'Hallaron, All rights reserved.
+May not be used, modified, or copied without permission.
+
+######################################################################
+
+***********
+Main Files:
+***********
+
+mm.{c,h}	
+	Your solution malloc package. mm.c is the file that you
+	will be handing in, and is the only file you should modify.
+
+mdriver.c	
+	The malloc driver that tests your mm.c file
+
+short{1,2}-bal.rep
+	Two tiny tracefiles to help you get started. 
+
+Makefile	
+	Builds the driver
+
+**********************************
+Other support files for the driver
+**********************************
+
+config.h	Configures the malloc lab driver
+fsecs.{c,h}	Wrapper function for the different timer packages
+clock.{c,h}	Routines for accessing the Pentium and Alpha cycle counters
+fcyc.{c,h}	Timer functions based on cycle counters
+ftimer.{c,h}	Timer functions based on interval timers and gettimeofday()
+memlib.{c,h}	Models the heap and sbrk function
+
+*******************************
+Building and running the driver
+*******************************
+To build the driver, type "make" to the shell.
+
+To run the driver on a tiny test trace:
+
+	unix> mdriver -V -f short1-bal.rep
+
+The -V option prints out helpful tracing and summary information.
+
+To get a list of the driver flags:
+
+	unix> mdriver -h
+
+
+--------
